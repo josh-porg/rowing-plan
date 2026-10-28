@@ -1,0 +1,51 @@
+{
+ "team_week": [
+  {
+   "day": "Tue",
+   "what": "team: steady state / UT pieces",
+   "zone": "Z3",
+   "minutes": 75,
+   "work_minutes": 40
+  },
+  {
+   "day": "Thu",
+   "what": "team: long intervals (~4 min, equal rest)",
+   "zone": "Z5",
+   "minutes": 75,
+   "work_minutes": 20
+  },
+  {
+   "day": "Fri",
+   "what": "team: race pieces at rate",
+   "zone": "Z4",
+   "minutes": 75,
+   "work_minutes": 30
+  }
+ ],
+ "available_days": [
+  "Mon",
+  "Wed",
+  "Sat",
+  "Sun"
+ ],
+ "own_aerobic_minutes_start": 100,
+ "own_aerobic_minutes_cap": 300,
+ "load_week_growth": 0.03,
+ "long_session_cap_min": 90,
+ "fall_key_race_md": [
+  10,
+  17
+ ],
+ "spring_key_race_md": [
+  6,
+  1
+ ],
+ "start": "2026-11-02",
+ "target": {
+  "distance_m": 5000,
+  "time_s": 1080.0,
+  "by": "2030-09-25"
+ },
+ "id": "athlete",
+ "note": "Non-identifying settings for the plan; tests, sex, birth year and body mass come from the erg sheet at build time."
+}

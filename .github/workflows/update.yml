@@ -1,0 +1,80 @@
+# Rebuild the training plan from the team erg sheet every morning and publish it, encrypted, to GitHub Pages.
+#
+# The engine (plan generator, squad yardstick, page shell) lives in josh-porg/CoxswainSimulator_V_0 under
+# research/training/; this repository holds only the non-identifying config and this workflow.
+#
+# Secrets (Settings > Secrets and variables > Actions):
+#   ERG_SHEET_ID     the Google sheet id of the team erg sheet (link-viewable)
+#   ATHLETE_NAME     the athlete's row label on the "Erg Test POST HERE" tab
+#   SITE_PASSPHRASE  the passphrase the page asks for
+#
+# Kill switch: `gh workflow disable update.yml -R josh-porg/rowing-plan` stops the rebuilds;
+# `gh api -X DELETE repos/josh-porg/rowing-plan/pages` takes the page down.
+name: Rebuild the plan
+
+on:
+  schedule:
+    - cron: "17 10 * * *"      # daily, 10:17 UTC (early morning in the US)
+  workflow_dispatch:
+
+permissions:
+  contents: write              # only for the keep-alive commit below
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch the engine
+        uses: actions/checkout@v4
+        with:
+          repository: josh-porg/CoxswainSimulator_V_0
+          path: engine
+          sparse-checkout: research/training
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install numpy openpyxl cryptography
+
+      - name: Build the encrypted site
+        env:
+          ERG_SHEET_ID: ${{ secrets.ERG_SHEET_ID }}
+          ATHLETE_NAME: ${{ secrets.ATHLETE_NAME }}
+          SITE_PASSPHRASE: ${{ secrets.SITE_PASSPHRASE }}
+        run: python engine/research/training/site_build.py --config config.json --out _site
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      # GitHub disables scheduled workflows in a public repository after 60 days without a commit.
+      - name: Keep the schedule alive
+        run: |
+          last=$(git log -1 --format=%ct)
+          if [ $(( ($(date +%s) - last) / 86400 )) -ge 45 ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            date -u +%F > .keepalive
+            git add .keepalive
+            git commit -m "Keep the daily rebuild alive"
+            git push
+          fi
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
